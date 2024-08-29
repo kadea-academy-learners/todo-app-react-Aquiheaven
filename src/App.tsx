@@ -1,56 +1,70 @@
-// import { useState } from 'react'
+import { useEffect, useState } from "react";
+import { Header } from "./components/Header";
+import { Tasks } from "./components/tasks"; // Assurez-vous que l'importation est correcte
 
-// import './App.css'
-import {Header } from "./compenents/Header"
+const LOCAL_STORAGE_KEY = 'todo:tasks';
+
+type Task = {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+};
 
 function App() {
-  // const [count, setCount] = useState(0)
-  // const [checked, setChecked] =useState(true)
-  // const toggleCheck =() => {
-  //   setChecked(!checked)
-  // }
-  // const  handleSubmit =(e) => {
-  //   e.preventDefaut()
+  const [tasks, setTasks] = useState<Task[]>([]);
 
-  // }
-  // return <form onSubmit={handleSubmit}>
-  //   <input type="text"  name='nom' />
-  //   <input type="checkbox" checked={checked} onChange={toggleCheck} />
-  //   <button>envoyer</button>
-  // </form>
+  function loadSavedTasks() {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if(saved) {
+      setTasks(JSON.parse(saved));
+    }
+  }
 
-  // return (
-  //   <>
+  function setTasksAndSave(newTasks: Task[] | ((prevState: Task[]) => Task[])) {
+    setTasks(newTasks);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(newTasks));
+  }
 
-      
-  //     <h1>Todo List</h1>
-  //     <div className='inserer'>
-  //       <form>
-  //         <div>
-  //           <input type="text" id='task' placeholder='ajout tache' />
-  //         </div>
-  //         <div>
-  //           <button type='submit'> Ajouter</button>
-  //         </div>
-  //       </form>
-  //     </div>
-  //     <div className="card">
-  //       <button onClick={() => setCount((count) => count + 1)}>
-  //         count is {count}
-  //       </button>
-  //       <p>
-  //         Edit <code>src/App.tsx</code> and save to test HMR
-  //       </p>
-  //     </div>
-  //     <p className="read-the-docs">
-  //       Click on the Vite and React logos to learn more
-  //     </p>
-  //   </>
-  // )
+  useEffect(() => {
+    loadSavedTasks();
+  }, []);
 
-  return(
-    <Header />
-  )
+  function addTask(taskTitle: string) {
+    setTasksAndSave([...tasks, {
+      id: crypto.randomUUID(),
+      title: taskTitle,
+      isCompleted: false
+    }]);
+  }
+
+  function deleteTaskById(taskId: string) {
+    const newTasks = tasks.filter(task => task.id !== taskId);
+    setTasksAndSave(newTasks);
+  }
+
+  function toggleTaskCompletedById(taskId: string) {
+    const newTasks = tasks.map(task => {
+      if(task.id === taskId) {
+        return {
+          ...task,
+          isCompleted: !task.isCompleted
+        } as Task;
+      }
+      return task;
+    });
+    setTasksAndSave(newTasks);
+  }
+
+  return (
+    <>
+      <Header handleAddTask={addTask} />
+      <Tasks
+        tasks={tasks}
+        onDelete={deleteTaskById}
+        onComplete={toggleTaskCompletedById}
+      />
+    </>
+  );
 }
 
-export default App
+export default App;
